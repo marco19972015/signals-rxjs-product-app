@@ -21,4 +21,18 @@ export class ProductService {
         tap(() => console.log('In http.get pipeline.'))
       )
   }
+
+
+  // Here we add code that returns one product by id
+  getProduct(id: number){
+
+    // Create a productUrl that gets a single item based of id
+    const productUrl = this.productsUrl + '/' + id;
+
+    // We return the singular product
+    return this.http.get<Product>(productUrl)
+      .pipe(
+        tap(() => console.log('In http.get by id pipeline'))
+      )
+  }
 }

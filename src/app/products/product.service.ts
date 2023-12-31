@@ -11,10 +11,8 @@ import { HttpErrorService } from '../utilities/http-error.service';
 export class ProductService {
   // Acts as our url
   private productsUrl = 'api/productsss';
-
   // Inject our HttpErrorService
   private errorService = inject(HttpErrorService)
-
   private http = inject(HttpClient);
 
   getProducts(): Observable<Product[]> {
@@ -44,10 +42,5 @@ export class ProductService {
     // Return throwError. ThrowError creates a replacement observable that when subscribe emits an error notification with the error message
     // We pass in a function that returns a formatted error message
     return throwError(() => formattedMessage);
-
-    // Or since we call this method from within the observable pipeline, We can use 
-    // the JS throw statement. In this context, the throw statement returns a replacement observable.
-    // When subscribe it emitts an error notification with the error message
-    // throw formattedMessage;
   }
 }

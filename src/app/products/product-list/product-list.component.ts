@@ -13,9 +13,12 @@ import { Subscription, tap } from 'rxjs';
   imports: [NgIf, NgFor, NgClass, ProductDetailComponent]
 })
 export class ProductListComponent implements OnInit, OnDestroy {
-  // For the ProductListComponent, we want to load the products when the component is initialized
-  // and we want to unsubscribe from the product observable when the component is destroyed
-  
+  // Notice that we already have a declared variable for displaying any error message.
+  // Further down, we have an ngOnInit, where we want to catch the error emitted from the replacement observable.
+
+  // There are two ways we can do this, with the observer or in the pipeline
+  // We can use the observer error callback function within our subscribe. 
+
   pageTitle = 'Products';
   errorMessage = '';
 
@@ -25,7 +28,6 @@ export class ProductListComponent implements OnInit, OnDestroy {
   // Inject our ProductService in order to get the product so we can show it in our template
   private productService = inject(ProductService);
 
-  // Products
   products: Product[] = [];
 
   // Selected product id to highlight the entry
@@ -36,11 +38,14 @@ export class ProductListComponent implements OnInit, OnDestroy {
     .pipe(
       tap(() => console.log('In component pipeline'))
     )
-    // In order to react to the emissions when the observable emits our product array we need to 
-    // add an observer inside the subscribe method
-    .subscribe(products => {
-      this.products = products;
-      console.log(this.products);
+    // The subscribe only takes in one argument, so we add a curly braces to define an observer object 
+    .subscribe({
+      next: products => {  // We set the next property to our next function
+        this.products = products;
+        console.log(this.products);
+      },
+      // For the erro callback, we set the errorMessage local variable to the error message emitted by the service 
+      error: err => this.errorMessage = err
     });
   }
 

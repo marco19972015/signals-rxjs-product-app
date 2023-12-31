@@ -1,42 +1,53 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, of, tap } from 'rxjs';
+import { Observable, catchError, of, tap, throwError } from 'rxjs';
 import { Product } from './product';
 import { ProductData } from './product-data';
+import { HttpErrorService } from '../utilities/http-error.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProductService {
+  // Acts as our url
   private productsUrl = 'api/productsss';
-  
-  // Declaring our prop as private so it's only accessible within this service uisng DepInjec
+
+  // Inject our HttpErrorService
+  private errorService = inject(HttpErrorService)
+
   private http = inject(HttpClient);
 
-  // Currently this method does not do anything
   getProducts(): Observable<Product[]> {
-    // We need to add the generic type parameter and specify the return as a Product array
     return this.http.get<Product[]>(this.productsUrl)
       .pipe(
-        // we ignore the value returned and log out that we are in the pipeline
         tap(() => console.log('In http.get pipeline.')),
-        catchError(err => {
-          console.error(err);
-          // When the error happens return the list of hard coded items
-          return of(ProductData.products)  // We need to make the hard coded items return as an observable
-        })
+        // We replace the multiline error function with the handleError function and pass in error
+        catchError(err => this.handleError(err))
       );
   }
-
-
-  // Here we add code that returns one product by id
+  
   getProduct(id: number){
-    // Create a productUrl that gets a single item based of id
     const productUrl = this.productsUrl + '/' + id;
-    // We return the singular product
     return this.http.get<Product>(productUrl)
       .pipe(
         tap(() => console.log('In http.get by id pipeline'))
       )
+  }
+
+  // Create a private HandleError method
+  private handleError(err: HttpErrorResponse): Observable<never>{  // We use never because we want an observable that doesn't emit anything and doesn't complete
+    // We simple want this method to error out
+
+    // Declare a variable for our formatted message, then call the errorService formatError method
+    const formattedMessage = this.errorService.formatError(err);
+
+    // Return throwError. ThrowError creates a replacement observable that when subscribe emits an error notification with the error message
+    // We pass in a function that returns a formatted error message
+    return throwError(() => formattedMessage);
+
+    // Or since we call this method from within the observable pipeline, We can use 
+    // the JS throw statement. In this context, the throw statement returns a replacement observable.
+    // When subscribe it emitts an error notification with the error message
+    // throw formattedMessage;
   }
 }

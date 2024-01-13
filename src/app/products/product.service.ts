@@ -28,7 +28,6 @@ export class ProductService {
     const productUrl = this.productsUrl + '/' + id;
     return this.http.get<Product>(productUrl)
       .pipe(
-        tap(() => console.log('In http.get by id pipeline')),
         // We want the map above catchError since it can generate an error
         switchMap(product => this.getProductWithReviews(product)),  // Pass product to getProductWithReviews method, emits an observable (inner observable) 
         catchError(err => this.handleError(err))

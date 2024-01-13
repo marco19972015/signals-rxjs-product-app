@@ -18,13 +18,11 @@ export class ProductService {
   // Private so the injected instance can only be used by this service
   private reviewService = inject(ReviewService)
 
-  getProducts(): Observable<Product[]> {
-    return this.http.get<Product[]>(this.productsUrl)
-      .pipe(
-        tap(() => console.log('In http.get pipeline.')),
-        catchError(err => this.handleError(err))
-      );
-  }
+  // We don't want any other code to modify this code so we add readonly
+  readonly products$ =  this.http.get<Product[]>(this.productsUrl).pipe(
+    tap(() => console.log('In http.get pipeline.')),
+    catchError(err => this.handleError(err))
+    );
   
   getProduct(id: number){
     const productUrl = this.productsUrl + '/' + id;
@@ -37,24 +35,13 @@ export class ProductService {
       )
   }
 
-  // Method to getProductWithReviews takes in a product (uses the product to retrieve the reviews)
-  // This method emits an oberservable that emits the updated product with its reviews
   private getProductWithReviews(product: Product): Observable<Product>{
-    // check if product has hasReviews property
     if (product.hasReviews){
-      // If so, issue the http get request 
-      // There may be multiple reviews, so we expect to get Review array
-      // For the url we use reviewService.getReviewUrl and pass in the product id
-      return this.http.get<Review[]>(this.reviewService.getReviewUrl(product.id))  // returns an array of reviews
-        //  We have an inner observable
+      return this.http.get<Review[]>(this.reviewService.getReviewUrl(product.id)) 
         .pipe(
-          // Create a copy of the passed in product using spread operator and append reviews to it
-          // 'as' Product tells TS to treat the resulting object as an instance of the 'Product' type
           map(reviews => ({ ...product, reviews} as Product))
         )
     } else {
-      // If false, then we don't need to get reviews, so return original product
-      // Make sure to return the product as an observable, so we use 'of' operator
       return of(product);
     }
   }

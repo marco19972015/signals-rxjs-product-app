@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, concatMap, map, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, concatMap, map, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
 import { Product } from './product';
 import { ProductData } from './product-data';
 import { HttpErrorService } from '../utilities/http-error.service';
@@ -15,8 +15,14 @@ export class ProductService {
   private productsUrl = 'api/products';
   private errorService = inject(HttpErrorService)
   private http = inject(HttpClient);
-  // Private so the injected instance can only be used by this service
   private reviewService = inject(ReviewService)
+
+  // We make the BehaviorSubject of generic type number and undefine. This allows us the pass the value 
+  // of undefined. If the user hasn't selected anything, then the id will be undefined. 
+  // Doing this allows us to avoid using 0, doing that would give it some special meaning.
+  private productSelectedSubject = new BehaviorSubject<number | undefined>(undefined);
+  // readonly prevents us from accidently re-writing the property 
+  readonly productSelected$ = this.productSelectedSubject.asObservable();
 
   // We don't want any other code to modify this code so we add readonly
   readonly products$ =  this.http.get<Product[]>(this.productsUrl).pipe(
@@ -33,6 +39,12 @@ export class ProductService {
         switchMap(product => this.getProductWithReviews(product)),  // Pass product to getProductWithReviews method, emits an observable (inner observable) 
         catchError(err => this.handleError(err))
       )
+  }
+
+  // Everytime a user selects a product we'll use BehaviorSubject and emit a notification with the productId
+  productSelected(selectedProductId: number): void{
+    // Every time a user selects a product we emmit a next notification to any subscribers
+    this.productSelectedSubject.next(selectedProductId);
   }
 
   private getProductWithReviews(product: Product): Observable<Product>{

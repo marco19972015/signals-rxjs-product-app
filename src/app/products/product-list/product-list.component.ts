@@ -25,8 +25,10 @@ export class ProductListComponent {
     })
   );
 
-  // Selected product to highlight the entry
-  selectedProductId: number = 0;
+  // reference the references the observable from the service
+  // it's good practice to bind from a template to component, not from a template to a service
+  // readonly to ensure we don't overwright the variable
+  readonly selectedProductId$  = this.productService.productSelected$;
 
   onSelected(productId: number): void {
     this.productService.productSelected(productId);

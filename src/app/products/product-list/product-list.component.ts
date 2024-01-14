@@ -19,7 +19,6 @@ export class ProductListComponent {
 
   // Using a declaritive approach (meaning assigning code to a property)
   readonly product$ = this.productService.products$.pipe(
-    tap(() => console.log('In component pipeline')),
     catchError(err => {
       this.errorMessage = err;
       return EMPTY;

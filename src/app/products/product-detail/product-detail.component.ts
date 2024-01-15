@@ -28,6 +28,6 @@ export class ProductDetailComponent{
   // pageTitle = this.product ? `Product Detail for: ${this.product.productName}` : 'Product Detail';
   pageTitle = 'ProductDetail';
 
-  addToCart(product: Product) {
+  addToCart(product: Product ) {
   }
 }

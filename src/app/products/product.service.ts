@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, catchError, concatMap, filter, map, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, combineLatest, concatMap, filter, map, of, shareReplay, switchMap, tap, throwError, toArray } from 'rxjs';
 import { Product } from './product';
 import { ProductData } from './product-data';
 import { HttpErrorService } from '../utilities/http-error.service';
@@ -17,33 +17,41 @@ export class ProductService {
   private http = inject(HttpClient);
   private reviewService = inject(ReviewService)
 
-  // We make the BehaviorSubject of generic type number and undefine. This allows us the pass the value 
-  // of undefined. If the user hasn't selected anything, then the id will be undefined. 
-  // Doing this allows us to avoid using 0, doing that would give it some special meaning.
   private productSelectedSubject = new BehaviorSubject<number | undefined>(undefined);
-  // readonly prevents us from accidently re-writing the property 
   readonly productSelected$ = this.productSelectedSubject.asObservable();
 
-  // We don't want any other code to modify this code so we add readonly
   readonly products$ =  this.http.get<Product[]>(this.productsUrl).pipe(
     tap(p => console.log(JSON.stringify(p))),
     shareReplay(1),
     catchError(err => this.handleError(err))
     );
 
-  readonly product$ = this.productSelected$.pipe(
-    // We don't want to get a product if the product is undefined so we use filter by Boolean
-    // which filters out any null or undefined values
+  readonly product1$ = this.productSelected$.pipe(
     filter(Boolean),
     switchMap(id => {
-      // productSelected$ emits the product id, we use that id to construct the productUrl
       const productUrl = this.productsUrl + '/' + id;
-      // Then we issue an http.get request passing in the url
       return this.http.get<Product>(productUrl).pipe(
         switchMap(product => this.getProductWithReviews(product)),
         catchError(err => this.handleError(err))
       )
     })
+  ) 
+  
+  // combineLatest does not emit until both observables have emitted at least once
+  // We used combineLatest to combine our
+  product$ = combineLatest([
+    // productSelected$ observable, which emits every time the user selects a different product
+    this.productSelected$,
+    // and our products$ observable, which emits when the array of products is retrieved 
+    this.products$
+  ]).pipe(
+    map(([selectedProductId, products]) => 
+      products.find(product => product.id === selectedProductId)
+    ),
+    // In the case we get undef-ined, we filter by Boolean since the product property might give us issues otherwise.
+    filter(Boolean),
+    switchMap(product => this.getProductWithReviews(product)),
+    catchError(err => this.handleError(err))
   )
   
   // Everytime a user selects a product we'll use BehaviorSubject and emit a notification with the productId

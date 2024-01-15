@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, catchError, concatMap, map, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, concatMap, filter, map, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
 import { Product } from './product';
 import { ProductData } from './product-data';
 import { HttpErrorService } from '../utilities/http-error.service';
@@ -30,17 +30,22 @@ export class ProductService {
     shareReplay(1),
     catchError(err => this.handleError(err))
     );
-  
-  getProduct(id: number){
-    const productUrl = this.productsUrl + '/' + id;
-    return this.http.get<Product>(productUrl)
-      .pipe(
-        // We want the map above catchError since it can generate an error
-        switchMap(product => this.getProductWithReviews(product)),  // Pass product to getProductWithReviews method, emits an observable (inner observable) 
+
+  readonly product$ = this.productSelected$.pipe(
+    // We don't want to get a product if the product is undefined so we use filter by Boolean
+    // which filters out any null or undefined values
+    filter(Boolean),
+    switchMap(id => {
+      // productSelected$ emits the product id, we use that id to construct the productUrl
+      const productUrl = this.productsUrl + '/' + id;
+      // Then we issue an http.get request passing in the url
+      return this.http.get<Product>(productUrl).pipe(
+        switchMap(product => this.getProductWithReviews(product)),
         catchError(err => this.handleError(err))
       )
-  }
-
+    })
+  )
+  
   // Everytime a user selects a product we'll use BehaviorSubject and emit a notification with the productId
   productSelected(selectedProductId: number): void{
     // Every time a user selects a product we emmit a next notification to any subscribers

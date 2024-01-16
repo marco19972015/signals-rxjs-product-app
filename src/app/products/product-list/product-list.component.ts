@@ -17,13 +17,7 @@ export class ProductListComponent {
 
   private productService = inject(ProductService);
 
-  // Using a declaritive approach (meaning assigning code to a property)
-  readonly product$ = this.productService.products$.pipe(
-    catchError(err => {
-      this.errorMessage = err;
-      return EMPTY;
-    })
-  );
+  products = this.productService.products;
 
   // reference the references the observable from the service
   // it's good practice to bind from a template to component, not from a template to a service

@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable, computed, inject } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, combineLatest, concatMap, filter, map, of, shareReplay, switchMap, tap, throwError, toArray } from 'rxjs';
 import { Product } from './product';
 import { ProductData } from './product-data';
@@ -21,6 +21,10 @@ export class ProductService {
 
   private productSelectedSubject = new BehaviorSubject<number | undefined>(undefined);
   readonly productSelected$ = this.productSelectedSubject.asObservable();
+
+  // To hold the ID of the user selected product
+  // Undefined since initially the user hasn't had a change to choose a product
+  selectedProductId = signal<number | undefined>(undefined);
 
   // Retrieve product data, making it private and accessible only within the service
   private productsResult$ =  this.http.get<Product[]>(this.productsUrl).pipe(  // This is the observable
@@ -82,6 +86,7 @@ export class ProductService {
   productSelected(selectedProductId: number): void{
     // Every time a user selects a product we emmit a next notification to any subscribers
     this.productSelectedSubject.next(selectedProductId);
+    this.selectedProductId.set(selectedProductId);
   }
 
   private getProductWithReviews(product: Product): Observable<Product>{

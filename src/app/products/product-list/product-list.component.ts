@@ -24,7 +24,7 @@ export class ProductListComponent {
   // reference the references the observable from the service
   // it's good practice to bind from a template to component, not from a template to a service
   // readonly to ensure we don't overwright the variable
-  readonly selectedProductId$  = this.productService.productSelected$;
+  selectedProductId  = this.productService.selectedProductId
 
   onSelected(productId: number): void {
     this.productService.productSelected(productId);

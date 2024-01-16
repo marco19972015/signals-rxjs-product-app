@@ -17,6 +17,7 @@ export class ProductListComponent {
 
   private productService = inject(ProductService);
 
+  // Products
   products = this.productService.products;
 
   // reference the references the observable from the service

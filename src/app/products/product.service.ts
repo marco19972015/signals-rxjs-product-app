@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, computed, inject } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, combineLatest, concatMap, filter, map, of, shareReplay, switchMap, tap, throwError, toArray } from 'rxjs';
 import { Product } from './product';
 import { ProductData } from './product-data';
@@ -13,7 +13,7 @@ import { toSignal } from '@angular/core/rxjs-interop'
 })
 export class ProductService {
 
-  private productsUrl = 'api/products';
+  private productsUrl = 'api/productss';
   private errorService = inject(HttpErrorService)
   private http = inject(HttpClient);
   private reviewService = inject(ReviewService)
@@ -29,10 +29,18 @@ export class ProductService {
     );
 
     // A signal that contains a product array
-    // Create a signal from that observable
-    products = toSignal(this.products$, { initialValue: [] as Product[]});
+    // Create a signal from the observable
+  // products = toSignal(this.products$, { initialValue: [] as Product[]});
+  products = computed(() => {
+    try {
+      return toSignal(this.products$, { initialValue: [] as Product[]})();
+    } catch (error) {
+      // If we catch an error, return an empty array of products
+      return [] as Product[];
+    }
+  })
 
-  readonly product1$ = this.productSelected$.pipe(
+  readonly product$ = this.productSelected$.pipe(
     filter(Boolean),
     switchMap(id => {
       const productUrl = this.productsUrl + '/' + id;
@@ -43,22 +51,22 @@ export class ProductService {
     })
   ) 
   
-  // combineLatest does not emit until both observables have emitted at least once
-  // We used combineLatest to combine our
-  product$ = combineLatest([
-    // productSelected$ observable, which emits every time the user selects a different product
-    this.productSelected$,
-    // and our products$ observable, which emits when the array of products is retrieved 
-    this.products$
-  ]).pipe(
-    map(([selectedProductId, products]) => 
-      products.find(product => product.id === selectedProductId)
-    ),
-    // In the case we get undef-ined, we filter by Boolean since the product property might give us issues otherwise.
-    filter(Boolean),
-    switchMap(product => this.getProductWithReviews(product)),
-    catchError(err => this.handleError(err))
-  )
+  // // combineLatest does not emit until both observables have emitted at least once
+  // // We used combineLatest to combine our
+  // product$ = combineLatest([
+  //   // productSelected$ observable, which emits every time the user selects a different product
+  //   this.productSelected$,
+  //   // and our products$ observable, which emits when the array of products is retrieved 
+  //   this.products$
+  // ]).pipe(
+  //   map(([selectedProductId, products]) => 
+  //     products.find(product => product.id === selectedProductId)
+  //   ),
+  //   // In the case we get undef-ined, we filter by Boolean since the product property might give us issues otherwise.
+  //   filter(Boolean),
+  //   switchMap(product => this.getProductWithReviews(product)),
+  //   catchError(err => this.handleError(err))
+  // )
   
   // Everytime a user selects a product we'll use BehaviorSubject and emit a notification with the productId
   productSelected(selectedProductId: number): void{

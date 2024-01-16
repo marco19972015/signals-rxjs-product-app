@@ -7,13 +7,14 @@ import { HttpErrorService } from '../utilities/http-error.service';
 import { ReviewService } from '../reviews/review.service';
 import { Review } from '../reviews/review';
 import { toSignal } from '@angular/core/rxjs-interop'
+import { Result } from '../utilities/Result';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProductService {
 
-  private productsUrl = 'api/productss';
+  private productsUrl = 'api/products';
   private errorService = inject(HttpErrorService)
   private http = inject(HttpClient);
   private reviewService = inject(ReviewService)
@@ -22,23 +23,32 @@ export class ProductService {
   readonly productSelected$ = this.productSelectedSubject.asObservable();
 
   // Retrieve product data, making it private and accessible only within the service
-  private products$ =  this.http.get<Product[]>(this.productsUrl).pipe(
+  private productsResult$ =  this.http.get<Product[]>(this.productsUrl).pipe(  // This is the observable
+    // The retrieved array of items is emitted into this operator
+    // In the map operator I create a Result opbject
+    map(p => ({ data: p}) as Result<Product[]>),
     tap(p => console.log(JSON.stringify(p))),
     shareReplay(1),
-    catchError(err => this.handleError(err))
+    // Use the of creation function to create an observable, catchError wants an observable
+    catchError(err => of({ 
+      data: [],
+      // We can format the error using the formatError method
+      error: this.errorService.formatError(err)
+    } as Result<Product[]>))
     );
 
-    // A signal that contains a product array
-    // Create a signal from the observable
-  // products = toSignal(this.products$, { initialValue: [] as Product[]});
-  products = computed(() => {
-    try {
-      return toSignal(this.products$, { initialValue: [] as Product[]})();
-    } catch (error) {
-      // If we catch an error, return an empty array of products
-      return [] as Product[];
-    }
-  })
+  
+  // Create a signal from the observable
+  // We add private so other components can't access this signal
+  private productsResult = toSignal(this.productsResult$,  // A signal that contains a product array
+    // Initial value needs to match the observable type, which is result of product array
+    { initialValue: ({ data: []} as Result<Product[]>) });
+
+
+  // Now our components can use these two signals to get the data and check for any error messages
+  products = computed(() => this.productsResult().data);
+  productError = computed(() => this.productsResult().error);
+ 
 
   readonly product$ = this.productSelected$.pipe(
     filter(Boolean),
@@ -84,8 +94,6 @@ export class ProductService {
       return of(product);
     }
   }
-
-
 
   // Create a private HandleError method
   private handleError(err: HttpErrorResponse): Observable<never>{  // We use never because we want an observable that doesn't emit anything and doesn't complete

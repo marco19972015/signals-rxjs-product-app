@@ -13,12 +13,13 @@ import { EMPTY, catchError, tap } from 'rxjs';
 })
 export class ProductListComponent {
   pageTitle = 'Products';
-  errorMessage = '';
+  
 
   private productService = inject(ProductService);
 
   // Products
   products = this.productService.products;
+  errorMessage = this.productService.productError;
 
   // reference the references the observable from the service
   // it's good practice to bind from a template to component, not from a template to a service

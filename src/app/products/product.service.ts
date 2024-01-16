@@ -40,21 +40,18 @@ export class ProductService {
     } as Result<Product[]>))
     );
 
-  
   // Create a signal from the observable
   // We add private so other components can't access this signal
   private productsResult = toSignal(this.productsResult$,  // A signal that contains a product array
     // Initial value needs to match the observable type, which is result of product array
     { initialValue: ({ data: []} as Result<Product[]>) });
-
-
   // Now our components can use these two signals to get the data and check for any error messages
   products = computed(() => this.productsResult().data);
-  productError = computed(() => this.productsResult().error);
+  productsError = computed(() => this.productsResult().error);
  
 
   // This code now reacts to an emission whenever the selectedProductId changes
-  readonly product$ = toObservable(this.selectedProductId).pipe(
+  private productResult$ = toObservable(this.selectedProductId).pipe(
     filter(Boolean),
     switchMap(id => {
       const productUrl = this.productsUrl + '/' + id;
@@ -62,10 +59,23 @@ export class ProductService {
       return this.http.get<Product>(productUrl).pipe(
         // And the product reviews
         switchMap(product => this.getProductWithReviews(product)),
-        catchError(err => this.handleError(err))
+        catchError(err => of({
+          data: undefined, 
+          err: this.errorService.formatError
+        } as Result<Product>))
       )
-    })
+    }),
+    // We place the map method here because we first want to get the product along with the reviews
+    map(p => ({data: p} as Result<Product>))
   ) 
+
+  private productResult = toSignal(this.productResult$);
+  // We use the ? in both of computed signals, ? defines optional chaining. 
+  // It prevents null or undefined errors.
+  // The code only dots into the property if the object isn't null or undefined. 
+  // It's needed because the inital value of our productResult signal defaults to undefined
+  product = computed(() => this.productResult()?.data);
+  productError = computed(() => this.productResult()?.error);
   
   // // combineLatest does not emit until both observables have emitted at least once
   // // We used combineLatest to combine our

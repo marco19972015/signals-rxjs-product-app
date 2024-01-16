@@ -17,9 +17,9 @@ export class ProductListComponent {
 
   private productService = inject(ProductService);
 
-  // Products
+  // Products referencing signals 
   products = this.productService.products;
-  errorMessage = this.productService.productError;
+  errorMessage = this.productService.productsError;
 
   // reference the references the observable from the service
   // it's good practice to bind from a template to component, not from a template to a service

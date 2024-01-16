@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 
 import { NgIf, NgFor, CurrencyPipe, AsyncPipe } from '@angular/common';
 import { Product } from '../product';
@@ -13,22 +13,22 @@ import { CartService } from 'src/app/cart/cart.service';
     imports: [NgIf, NgFor, CurrencyPipe, AsyncPipe]
 })
 export class ProductDetailComponent{
-  errorMessage = '';
 
   // Inject an instance of our ProductService 
   private productService = inject(ProductService);
   private cartService = inject(CartService);
 
-  product$ = this.productService.product$.pipe(
-    catchError(err => {
-      this.errorMessage = err;
-      return EMPTY;
-    })
-  )
+  // Product to display
+  product = this.productService.product;
+  errorMessage = this.productService.productError;
 
   // Set the page title
   // pageTitle = this.product ? `Product Detail for: ${this.product.productName}` : 'Product Detail';
-  pageTitle = 'ProductDetail';
+  pageTitle = computed(() =>
+    this.product()
+      // We use ? because it could be null or undefined, if not used we will get an error
+      ? `Product Detail for: ${this.product()?.productName}`
+      : `Product Detail`)
 
   addToCart(product: Product ) {
     this.cartService.addToCart(product)

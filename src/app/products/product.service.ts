@@ -6,7 +6,7 @@ import { ProductData } from './product-data';
 import { HttpErrorService } from '../utilities/http-error.service';
 import { ReviewService } from '../reviews/review.service';
 import { Review } from '../reviews/review';
-import { toSignal } from '@angular/core/rxjs-interop'
+import { toObservable, toSignal } from '@angular/core/rxjs-interop'
 import { Result } from '../utilities/Result';
 
 @Injectable({
@@ -19,8 +19,7 @@ export class ProductService {
   private http = inject(HttpClient);
   private reviewService = inject(ReviewService)
 
-  private productSelectedSubject = new BehaviorSubject<number | undefined>(undefined);
-  readonly productSelected$ = this.productSelectedSubject.asObservable();
+
 
   // To hold the ID of the user selected product
   // Undefined since initially the user hasn't had a change to choose a product
@@ -54,11 +53,14 @@ export class ProductService {
   productError = computed(() => this.productsResult().error);
  
 
-  readonly product$ = this.productSelected$.pipe(
+  // This code now reacts to an emission whenever the selectedProductId changes
+  readonly product$ = toObservable(this.selectedProductId).pipe(
     filter(Boolean),
     switchMap(id => {
       const productUrl = this.productsUrl + '/' + id;
+      // It then issues the HTTP request to get the product 
       return this.http.get<Product>(productUrl).pipe(
+        // And the product reviews
         switchMap(product => this.getProductWithReviews(product)),
         catchError(err => this.handleError(err))
       )
@@ -85,7 +87,6 @@ export class ProductService {
   // Everytime a user selects a product we'll use BehaviorSubject and emit a notification with the productId
   productSelected(selectedProductId: number): void{
     // Every time a user selects a product we emmit a next notification to any subscribers
-    this.productSelectedSubject.next(selectedProductId);
     this.selectedProductId.set(selectedProductId);
   }
 
